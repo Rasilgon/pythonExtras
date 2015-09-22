@@ -1,2 +1,10 @@
 # pythonExtras
-# Code for python
+# Python in the bwHPC
+
+must be written
+
+# RSGISLIB examples
+
+
+etc
+
