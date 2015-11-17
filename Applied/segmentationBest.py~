@@ -1,0 +1,79 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Nov 13 21:48:39 2015
+
+@author: trashtos
+"""
+
+import pandas as pd
+import numpy as np
+
+
+# Read the two files
+row27col12 = pd.read_csv("/home/trashtos/CleaningTiles/summary_tile_row27col12_HCIR_nonzero_34.csv")
+row29col8 = pd.read_csv("/home/trashtos/CleaningTiles/summary_tile_row29col8_HCIR_nonzero_234.csv")
+
+comb27_2 = set()
+
+combisUno = list(row27col12['combination'][:500])+ list(row29col8['combination'][:500])
+
+len(combisUno)
+
+unique = list(set(combisUno))
+
+len(unique)
+
+# Convert unique into band combinations
+bandNames= {"MaxHALL":1,"MaxHAll_strStd1":2, "MaxHAll_strStd2":3, "MaxHAll_strStd3":4,
+                 "NDVI":5, "NDVI_Kuwahara5":6, "NDVI_Laplacian5":7,"NDVI_Mean5":8, 
+                 "EVI":9, "EVI_Kuwahara5":10, "EVI_Laplacian5":11,"EVI_Mean5":12, 
+                 "NIR":13, "NIR_Mean5":14,          
+                "RED":15 ,"RED_Mean5":16,  
+                "GREEN":17, "GREEN_Mean5":18,  
+                 "GRVI":19, "GRVI_Mean5":20,"GRVI_Laplacian5":21 }
+                 
+
+combinations = list(np.zeros(len(unique)))
+
+for i in range(len(unique)):
+    combinations[i] = [bandNames[x] for x in os.path.basename(unique[i]).split(" + ")]
+
+
+########################################################################
+import sys
+sys.path.append("/home/trashtos/GitHub/OBIA")
+from ownUtilities import cleanTiles
+from rsgislibWrappers import  ShepherdSegTest
+
+tmpath = "/media/trashtos/Meerkat/Ramiro_Masterarbeit/Segmentation/Temp"
+
+cluster = 80
+pixel = 80
+
+stackTilesCubic = [base + "_stack_cubic.kea" for base in cleanTiles()] 
+
+segStacks = [stackTilesCubic[-1], stackTilesCubic[-2], stackTilesCubic[16], 
+                        stackTilesCubic[5], stackTilesCubic[7], stackTilesCubic[12] ]
+
+
+
+
+stack = segStacks[3] 
+print(stack)
+
+def wrapper(combi):
+    tmpath = "/media/trashtos/Meerkat/Ramiro_Masterarbeit/Segmentation/Temp"
+    inImage = '/media/trashtos/Meerkat/cleanTiles/Rows10/Cols20/tile_row10col20_stack_cubic.kea'
+    try:
+        ShepherdSegTest(inImage, 80, 80,tmpath, band =  combi)
+    except:
+        print ("error in file")
+        
+
+for comb in combinations:
+    wrapper(comb )
+
+# get subset of files and compare
+
+
+

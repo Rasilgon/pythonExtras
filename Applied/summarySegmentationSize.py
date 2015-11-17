@@ -104,17 +104,21 @@ def getNames(fileName):
         return ("No names")                    
             
                
-                
+               
+def getCluster(fileName):
+    comb = os.path.basename(fileName).split("_")[4] +"_"+ os.path.basename(fileName).split("_")[5] 
+    return(comb)
+                            
  
             
 
-files = glob.glob("/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/*.txt")
+files = glob.glob("/home/trashtos/CleaningTiles/SegmentationFinal/tile_row27col12/*.txt")
 
-files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_4_clumpsexport', files, mask=False)
-
-files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_3_clumpsexport', files, mask=False)
-files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_1', files, mask=False)
-files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_2', files, mask=False)
+#files = files[:91]+files[92:]
+#files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_4_clumpsexport', files, mask=False)
+#files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_3_clumpsexport', files, mask=False)
+#files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_1', files, mask=False)
+#files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_2', files, mask=False)
 
 #files.append(outVector[:-4] + "_pd.txt")
 
@@ -152,7 +156,7 @@ for i in range(len(files)):
 
 summaryRaw = pd.DataFrame({
             'file':files,
-            'combination':[getNames(fila) for fila in files],
+            'combination':[ getCluster(fila) for fila in files],
             'intraVar':intraVar,
             'interVar':interVar,
             'normVar':normVar, 
@@ -161,7 +165,7 @@ summaryRaw = pd.DataFrame({
             })
  
 # REmove duplicates
-summaryRaw = summaryRaw.drop_duplicates(['combination'], take_last=True)
+#summaryRaw = summaryRaw.drop_duplicates(['combination'], take_last=True)
            
 summaryRaw['NintraVar'] = normalize(np.asarray(summaryRaw['intraVar']))
 summaryRaw['NinterVar'] = normalize(np.asarray(summaryRaw['interVar']))
@@ -188,7 +192,7 @@ summary['FYeahWHo'] = (summary['ScoreRange'] + summary['NnumObj'])/2.
 
 dof = summary.sort(['FYeah2'], ascending=[True])
 
-dof.to_csv("/home/trashtos/CleaningTiles/summary_tile_row10col20_HCIR_nonzero_34.csv", index=False)
+dof.to_csv("/home/trashtos/CleaningTiles/summary_tile_row27col12_size_nonzero.csv", index=False)
 
 
 

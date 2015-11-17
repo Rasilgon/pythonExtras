@@ -98,17 +98,17 @@ def wrapper(parList):
 
 
 #listVectors = glob.glob( "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/*.shp")
-listVectors = sorted(glob.glob("/home/trashtos/CleaningTiles/SegmentationFinal/tile_row27col12/*.shp"), key=os.path.getctime)
+listVectors = sorted(glob.glob("/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/*.shp"), key=os.path.getctime)
 #subList= np.asarray(grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/tile_rowcol8_stack_cubic_80_80_2', listVectors, mask = False))
 
-inImage=  "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row27col12_stack_cubic_HCIR.tif"
-values = np.zeros([len(listVectors[-108:]), 4], dtype=float)
+inImage=  "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20_stack_cubic_HCIR.tif"
+values = np.zeros([len(listVectors[-111:]), 4], dtype=float)
 
 
-listImage = np.asarray([inImage for i in range(len(listVectors[-108:]))])
+listImage = np.asarray([inImage for i in range(len(listVectors[-111:]))])
 #outFile = "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row27col8.txt"
 
-listPar = [ list(x) for x in zip(listVectors[-108:], listImage)]
+listPar = [ list(x) for x in zip(listVectors[-111:], listImage)]
 
 #subset = listPar[:14]
 
@@ -118,25 +118,6 @@ p = Pool(cl)
 p.map(wrapper, listPar)
 
 
-
-listVectors = sorted(glob.glob("/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/*.shp"), key=os.path.getctime)
-#subList= np.asarray(grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/tile_rowcol8_stack_cubic_80_80_2', listVectors, mask = False))
-
-inImage=  "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8_stack_cubic_HCIR.tif"
-values = np.zeros([len(listVectors[-108:]), 4], dtype=float)
-
-
-listImage = np.asarray([inImage for i in range(len(listVectors[-108:]))])
-#outFile = "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row27col8.txt"
-
-listPar = [ list(x) for x in zip(listVectors[-108:], listImage)]
-
-#subset = listPar[:14]
-
-cl = 1*3
-p = Pool(cl)
-
-p.map(wrapper, listPar)
 
 #df = pd.DataFrame(result, columns = ["file", "intraVarWeighted", "interVarWeighted", "normVariance", "numberSegments"])
 

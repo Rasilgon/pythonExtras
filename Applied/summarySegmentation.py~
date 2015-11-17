@@ -9,8 +9,6 @@ import glob
 import pandas as pd
 import numpy as np
 import os
-from ownUtilities import grep
-from gdalWrappers import vectorClip
 
 def normalize(array):
     subarray = array[np.isfinite(array)]
@@ -108,30 +106,32 @@ def getNames(fileName):
  
             
 
-files = glob.glob("/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/*.txt")
+files = glob.glob("/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/*.txt")
 
-files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_4_clumpsexport', files, mask=False)
+import re
 
-files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_3_clumpsexport', files, mask=False)
-files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_1', files, mask=False)
-files = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row10col20/HCIR/tile_row10col20_stack_cubic_80_80_2', files, mask=False)
+def grep(pattern,word_list):
+    expr = re.compile(pattern)
+    return ([elem for elem in word_list if expr.match(elem)])
 
-#files.append(outVector[:-4] + "_pd.txt")
+def grepInv(pattern,word_list):
+    expr = re.compile(pattern)
+    return ([elem for elem in word_list if not expr.match(elem)])
 
-#files1 = grepInv('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/tile_row29col8_stack_cubic_80_80_1', files)
-#files1 = grepInv('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/tile_row29col8_stack_cubic_80_80_2', files1)
+files1 = grepInv('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/tile_row29col8_stack_cubic_80_80_1', files)
+files1 = grepInv('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/tile_row29col8_stack_cubic_80_80_2', files1)
 
 
 #files1 = grep('/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8/tile_row29col8_stack_cubic_80_80_4', files)
 
-intraVar = np.zeros(len(files))
-interVar = np.zeros(len(files))
-normVar = np.zeros(len(files))
-numObj = np.zeros(len(files))
+intraVar = np.zeros(len(files1))
+interVar = np.zeros(len(files1))
+normVar = np.zeros(len(files1))
+numObj = np.zeros(len(files1))
 
-for i in range(len(files)):
+for i in range(len(files1)):
     #print(i)
-    df = pd.read_csv(files[i], sep=',', prefix ="NO")
+    df = pd.read_csv(files1[i], sep=',', prefix ="NO")
     try:
         intraVar[i] = df.iloc[0,0]
     except:
@@ -150,74 +150,20 @@ for i in range(len(files)):
         print("Could not")
     
 
-summaryRaw = pd.DataFrame({
-            'file':files,
-            'combination':[getNames(fila) for fila in files],
+summary = pd.DataFrame({
+            'file':files1,
+            'combination':[getNames(fila) for fila in files1],
             'intraVar':intraVar,
             'interVar':interVar,
             'normVar':normVar, 
             'numObj':numObj, 
-
+            'NintraVar':normalize(intraVar),
+            'NinterVar':normalize(interVar),
+            'NnumObj':normalize(numObj)
             })
- 
-# REmove duplicates
-summaryRaw = summaryRaw.drop_duplicates(['combination'], take_last=True)
-           
-summaryRaw['NintraVar'] = normalize(np.asarray(summaryRaw['intraVar']))
-summaryRaw['NinterVar'] = normalize(np.asarray(summaryRaw['interVar']))
-summaryRaw['NnumObj'] = normalize(np.asarray(summaryRaw['numObj']))
-
-
-summary = summaryRaw.loc[(summaryRaw.numObj > 0),].copy()    
-summary['Range']=   np.abs(summary['interVar']-summary['intraVar'])
-summary['NRange'] = normalizeClean(np.asarray(summary['Range']))
-summary['FYeah2'] = (summary['NRange'] + summary['NnumObj'])/2.
-
 summary['Score'] = (summary["NintraVar"] + summary["NinterVar"]+ summary["NnumObj"])/3.
-summary['NnumObj'] = np.round(summary['NnumObj'], decimals=3)
 
-summary['NinterVar'] = np.round(summary['NinterVar'], decimals=3)
-summary['NintraVar'] = np.round(summary['NintraVar'], decimals=3)
-
-summary['ScoreRange'] = np.abs(summary['NinterVar']-summary['NintraVar'])
-
-summary['FYeah'] = (summary['ScoreRange'] + summary['NnumObj'])/2.
-
-
-summary['FYeahWHo'] = (summary['ScoreRange'] + summary['NnumObj'])/2.
-
-dof = summary.sort(['FYeah2'], ascending=[True])
-
-dof.to_csv("/home/trashtos/CleaningTiles/summary_tile_row10col20_HCIR_nonzero_34.csv", index=False)
-
-
-
-
-
-####
-inImage=  "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8_subarea_segIdeal.tif"
-refImage =  "/media/trashtos/Meerkat/cleanTiles/Rows29/Cols8/tile_row29col8_stack_cubic_HCIR.tif"
-outImage = "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8_subarea_segIdeal_R.tif"
-
-clipReproject(inImage, refImage, outImage)
-
-import subprocess
-cmd = "gdal_polygonize.py " + outImage + """ -f "ESRI Shapefile" """ + os.path.splitext(outImage)[0] + ".shp"
-subprocess.call(cmd, shell = True)
-
-inVector = os.path.splitext(outImage)[0] + ".shp"
-coverVector = "/media/trashtos/Meerkat/0000/0000/0000_0000.shp"  
-outVector = "/home/trashtos/CleaningTiles/SegmentationFinal/tile_row29col8_subarea_segIdeal_OK.shp"
-vectorClip(inVector, coverVector, outVector)
-
-# values of this one
-values = segQuality(outVector, refImage)
-df = pd.DataFrame(values)
-df.to_csv(outVector[:-4] + "_pd.txt", header = False, index = False)
-
-
-
-
+summary.to_csv("/home/trashtos/CleaningTiles/summary_tile_row29col8_nonzero_2out.csv")
 ###
 import numpy as np
 #df = pd.read_csv("/home/trashtos/CleaningTiles/summary_tile_row29col8_nonzero_SORTED.csv")
@@ -234,7 +180,7 @@ df['NScoreRangeRaw'] = normalizeClean(np.asarray(df['ScoreRangeRaw']))
 
 dof = df.sort(['NScoreRange'], ascending=[True])
 
-dof.to_csv("/home/trashtos/CleaningTiles/summary_tile_row27col12_nonzero_RangeSorted.csv")
+dof.to_csv("/home/trashtos/CleaningTiles/summary_tile_row29col8_nonzero_RangeSorted_noOneTwo.csv")
 
 
 combinations = dof['combination']
