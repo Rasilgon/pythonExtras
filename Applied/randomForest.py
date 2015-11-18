@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 """
 Created on Tue Nov 17 10:28:45 2015
-
 @author: trashtos
 """
 # ----------------------------------------------------------------------------#
@@ -65,15 +63,15 @@ def kappa(cm):
     Nii = np.sum(cm.diagonal())
     estimatedKappa = ( N*Nii - NiNj) / (N*N -  NiNj)
     # Variance Kappa[]
-    masked =np.copy(cm)
+    masked =np.zeros(cm.shape)
     for i in range(len(cm[0,:])):
         for j in range(len(cm[0,:])):
-            masked[i,j] = Ni[i] + Nj[j]            
+            masked[i,j] =  cm[i,j] * (Ni[i] + Nj[j])
     Var1 = (1/N)*Nii
     Var2 = (1/N**2)*NiNj
     Var3 = (1/N**2)*np.sum(cm.diagonal()* (cm.sum(axis=1) + cm.sum(axis=0) ))
     Var4 = (1/N**3) * np.sum(masked)
-    Term1 = (Var1*(1-Var1)) / (1-Var1)**2
+    Term1 = (Var1*(1-Var1)) / (1-Var2)**2
     Term2 = (2*(1 - Var1)*(2*Var1*Var2 - Var3)) / (1 - Var2)**3
     Term3 =  ((Var4 - 4*Var2**2)*(1 - Var1)**2 ) /(1-Var2)**4 
     varianceKappa = (1/N)*( Term1 + Term2 + Term3)
@@ -86,16 +84,16 @@ def kappa(cm):
 # Define parameters
 # ----------------------------------------------------------------------------#
 np.random.seed(2)
-numberSamples = 10
+numberSamples = 100
 trainsplit = int(0.4 * numberSamples)
 testSplit = int(1* numberSamples - trainsplit )
-replicates = 10
+replicates = 50
 
 # ----------------------------------------------------------------------------#
 # Prepare data
 # ----------------------------------------------------------------------------#
 # Read in the table wioth attributes
-fila = "/home/trashtos/masterarbeit/appendix/DataI/Tables/ok7clumps8080_14_check_clean_max_def.csv"
+fila = "I:/RamiroNP/ok7clumps8080_14_check_clean_max_def.csv"
 data = pd.read_csv(fila, sep=',',  header='infer', prefix ="NO")
 #
 data.loc[(data.Class == 23), ['Class']] = 1
@@ -153,14 +151,12 @@ importances = np.zeros( (replicates,len(variables)) )
 
 grouped = cleanNA.groupby('Class')
 
-grouped.apply(lambda gb: np.random.choice(gb.ix,2))
-
 for i in range(replicates):
     # start rf
     rf = RandomForestClassifier(n_estimators=1000, criterion='gini',
                                 max_depth=None, min_samples_split=3,
                                 min_samples_leaf=1,max_features=3,
-                                bootstrap=True, oob_score=True, n_jobs=16,
+                                bootstrap=True, oob_score=True, n_jobs=8,
                                 random_state=2, verbose=2 ) 
     # Subset 100 first
     indicesTable =list(itertools.chain.from_iterable([np.random.choice(b.index.values, numberSamples, replace=False)   for a, b in grouped ]  ))
@@ -168,8 +164,7 @@ for i in range(replicates):
     # Get ramdom selection of indices
     x = np.asarray(table.ix[:,2:],dtype=np.float32)
     response = np.asarray(table.ix[:,1].copy(),dtype=np.uint32)
-    
-    Counter(response)
+
     
 #xtest = xtest.drop('CanopyCoverAvg', axis =1)
     sss = StratifiedShuffleSplit(response, 1, test_size=0.40, train_size=0.60,
@@ -178,15 +173,15 @@ for i in range(replicates):
     for test_index, train_index in sss:
         rf.fit(x[train_index], response[train_index])
         importances[i, :] = rf.feature_importances_
-       # impVar = pd.DataFrame({'Variable':variables,'importances':importances})
-      #  impVar.to_csv('~/Data/Importances/importance_' + str(i) + '.txt', index=False)
+        impVar = pd.DataFrame({'Variable':variables,'importances':rf.feature_importances_})
+        impVar.to_csv('I:/RamiroNP/Importance/importance_' + str(i) + '.txt', index=False)
 
 finalImportances = np.zeros(len(variables))
 for i in range(len(variables)):
     finalImportances[i] = np.mean(importances[:,i])
 
 importanceMean = pd.DataFrame({'Variable':variables,'importances':finalImportances})
-#importanceMean.to_csv('~/Data/MeanImportance.txt', index=False, sep=',') 
+importanceMean.to_csv('I:/RamiroNP/MeanImportance.txt', index=False, sep=',') 
   
 
 # Now read data of importances and do the averate, then short them out
@@ -200,7 +195,16 @@ rankedVariables = list (importanceMean.sort_index(by=['importances'], ascending=
 # Start over with random forest
 # create numpy array to hold values
 
+colNames = ['run','numFeatures','fetNames', 'precision', 'accuracy', 'classficationAcc',
+            'classesAccuracy', 'classesPrecision', 'importances', 'oobscore',
+            'rfscore', 'classesProbability','estimatedKappa', 'varianceKappa',
+            'confMatrix']
+            
+            
+
 for i in range(replicates):
+    # open datagrame to hold
+    rfMatrix = pd.DataFrame(colNames) # then later append, and print out one
     # start rf
     rf = RandomForestClassifier(n_estimators=1000, criterion='gini',
                                 max_depth=None, min_samples_split=3,
@@ -231,7 +235,7 @@ for i in range(replicates):
                 classficationAcc = metrics.accuracy_score(response[test_index], y_pred)   
                 score = rf.score(x[test_index], response[test_index] )
                 classficationAcc = metrics.accuracy_score(response[test_index], y_pred)
-                kappaValue = kappa(cm)
+                estimatedKappa, varianceKappa = kappa(cm)
                 probability = rf.predict_proba(x[test_index])
         # put all in dataframe
                 rfMatrix = pd.DataFrame({
@@ -247,10 +251,11 @@ for i in range(replicates):
                             'oobscore':str(rf.oob_score_),
                             'rfscore': str(score),
                             'classesProbability': [("; ").join([(" ").join((map(str,probability[i]))) for i in range(len(probability[0]))])],
-                            'kappa' : str(kappaValue),
+                            'estimatedKappa' : str(estimatedKappa), 
+                            'varianceKappa' : str(varianceKappa),
                             'confMatrix':[("; ").join([(" ").join((map(str,cm[i]))) for i in range(len(cm[0]))])] 	
                             })
-                rfMatrix.to_csv("/home/trashtos/randomForest_run_"+str(i)+"_" + str(len(variablesSubset)) +"_.txt", index=False)
+                rfMatrix.to_csv("I:/RamiroNP/Predictions/randomForest_run_"+str(i)+"_" + str(len(variablesSubset)) +"_.txt", index=False)
         
 # ----------------------------------------------------------------------------#
 # The End
