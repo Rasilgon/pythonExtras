@@ -53,11 +53,32 @@ def enhancedConfusionMatrix(actuals, predictions):
 
 
 def kappa(cm):
-    
-    N =  np.sum(cm.sum(axis=1)) + np.sum( cm.sum(axis=0))
-    kappa = ( N*np.sum(cm.diagonal()) - np.sum(cm.sum(axis=1) *  cm.sum(axis=0))) / (N*N -  np.sum(cm.sum(axis=1) *  cm.sum(axis=0)))
+    #masked =np.copy(cm)
+    #for i in range(len(cm[0])):
+    #    masked[i,i]= 0    
+    #N = np.sum(masked.sum(axis=1)) + np.sum(masked.sum(axis=0))
+   # kappa = ( N*np.sum(cm.diagonal()) - np.sum(masked.sum(axis=1) *  masked.sum(axis=0))) / (N*N -  np.sum(masked.sum(axis=1) *  masked.sum(axis=0)))
+    Ni = cm.sum(axis=1) # row
+    Nj = cm.sum(axis=0) # colum
+    N = np.sum(cm.sum(axis=1)) + np.sum(cm.sum(axis=0))
+    NiNj = np.sum(cm.sum(axis=1) *  cm.sum(axis=0))
+    Nii = np.sum(cm.diagonal())
+    estimatedKappa = ( N*Nii - NiNj) / (N*N -  NiNj)
+    # Variance Kappa[]
+    masked =np.copy(cm)
+    for i in range(len(cm[0,:])):
+        for j in range(len(cm[0,:])):
+            masked[i,j] = Ni[i] + Nj[j]            
+    Var1 = (1/N)*Nii
+    Var2 = (1/N**2)*NiNj
+    Var3 = (1/N**2)*np.sum(cm.diagonal()* (cm.sum(axis=1) + cm.sum(axis=0) ))
+    Var4 = (1/N**3) * np.sum(masked)
+    Term1 = (Var1*(1-Var1)) / (1-Var1)**2
+    Term2 = (2*(1 - Var1)*(2*Var1*Var2 - Var3)) / (1 - Var2)**3
+    Term3 =  ((Var4 - 4*Var2**2)*(1 - Var1)**2 ) /(1-Var2)**4 
+    varianceKappa = (1/N)*( Term1 + Term2 + Term3)
      
-    return(kappa)    
+    return(estimatedKappa, varianceKappa)    
     
     
    
